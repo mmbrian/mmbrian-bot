@@ -168,16 +168,12 @@ class WebhookHandler(webapp2.RequestHandler):
                     ISP: %s
                     PO %s (%s)
                     ''' % (data['city'], 
-                           data['latitude'],
-                           data['longitude'],
+                           data['latitude'], data['longitude'],
                            data['timezone'],
-                           data['country'],
-                           data['country_code'],
-                           data['region'],
-                           data['region_code'],
+                           data['country'], data['country_code'],
+                           data['region'], data['region_code'],
                            data['isp'],
-                           data['postal_code'],
-                           data['area_code'])
+                           data['postal_code'], data['area_code'])
                 except urllib2.HTTPError, err:
                     handle_error(err)
             else:

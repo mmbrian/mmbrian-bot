@@ -24,6 +24,7 @@ BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
 class EnableStatus(ndb.Model):
     # key name: str(chat_id)
     enabled = ndb.BooleanProperty(indexed=False, default=False)
+    translate_mode = ndb.BooleanProperty(indexed=False, default=False)
 
 
 # ================================
@@ -38,6 +39,18 @@ def getEnabled(chat_id):
     if es:
         return es.enabled
     return False
+
+def setTranslateMode(chat_id, status):
+    es = EnableStatus.get_or_insert(str(chat_id))
+    es.translate_mode = status
+    es.put()
+def isTranslateMode(chat_id):
+    es = EnableStatus.get_by_id(str(chat_id))
+    if es:
+        return es.translate_mode
+    return False    
+    
+
 
 
 # ================================
@@ -110,8 +123,12 @@ class WebhookHandler(webapp2.RequestHandler):
                 reply('Bot enabled')
                 setEnabled(chat_id, True)
             elif text == '/stop':
-                reply('Bot disabled')
-                setEnabled(chat_id, False)
+                if isTranslateMode(chat_id):
+                    reply('Deactivated translation mode.')
+                    setTranslateMode(chat_id, False)
+                else:
+                    reply('Bot disabled')
+                    setEnabled(chat_id, False)
             elif text == '/image':
                 img = Image.new('RGB', (512, 512))
                 base = random.randint(0, 16777216)
@@ -120,29 +137,37 @@ class WebhookHandler(webapp2.RequestHandler):
                 output = StringIO.StringIO()
                 img.save(output, 'JPEG')
                 reply(img=output.getvalue())
+            elif text in ['/translate', '/tmode', '/german']:
+                reply('Activated translation mode. deactivate using /stop')
+                setTranslateMode(chat_id, True)
             else:
                 reply('What command?')
 
         # CUSTOMIZE FROM HERE
 
         elif 'who are you' in text:
-            reply('telebot starter kit, created by yukuku: https://github.com/yukuku/telebot')
+            reply('I\'m just a bot.')
         elif 'what time' in text:
-            reply('look at the top-right corner of your screen!')
+            reply('I\'m not a watch you know, at least not yet.')
         else:
             if getEnabled(chat_id):
-                try:
-                    resp1 = json.load(urllib2.urlopen('http://www.simsimi.com/requestChat?lc=en&ft=1.0&req=' + urllib.quote_plus(text.encode('utf-8'))))
-                    back = resp1.get('res')
-                except urllib2.HTTPError, err:
-                    logging.error(err)
-                    back = str(err)
-                if not back:
-                    reply('okay...')
-                elif 'I HAVE NO RESPONSE' in back:
-                    reply('you said something with no meaning')
+                if isTranslateMode(chat_id):
+                    query = text
+                    data = '{\'searchText\': \'' + query + '\', \'direction\': \'65540\', \'maxTranslationChars\':\'-1\'}'
+                    url = 'http://www.reverso.net/WebReferences/WSAJAXInterface.asmx/TranslateWS'
+                    req = urllib2.Request(url, data, {'Content-Type': 'application/json'})
+                    try:
+                        f = urllib2.urlopen(req)
+                        response = f.read()
+                        f.close()
+                        data = json.loads(response)
+                        response = data['d']['result']
+                        reply(response)
+                    except urllib2.HTTPError, err:
+                        logging.error(err)
+                        reply("Something went wrong :(")
                 else:
-                    reply(back)
+                    reply('Only translation mode is implemented so far. activate it using /tmode, /german or /translate')
             else:
                 logging.info('not enabled for chat_id {}'.format(chat_id))
 

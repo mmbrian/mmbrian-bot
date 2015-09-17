@@ -151,7 +151,8 @@ class WebhookHandler(webapp2.RequestHandler):
                     response = data['ip']
                     reply(response)
                 except urllib2.HTTPError, err:
-                    handle_error(err)
+                    logging.error(err)
+                    reply("Something went wrong :(")
             elif text.startswith('/track'):
                 ip_address = text[6:].strip()
                 req = urllib2.Request(settings.GEOIP_URL + ip_address)
@@ -161,12 +162,12 @@ class WebhookHandler(webapp2.RequestHandler):
                     f.close()
                     data = json.loads(response)
                     res = '''
-                    %s [LA-%s, LO-%s]
+                    %s | LA %s LO %s
                     TZ: %s
                     %s (%s)
                     %s (%s)
                     ISP: %s
-                    PO %s (%s)
+                    PO: %s (%s)
                     ''' % (data['city'], 
                         data['latitude'], data['longitude'],
                         data['timezone'],
@@ -176,7 +177,30 @@ class WebhookHandler(webapp2.RequestHandler):
                         data['postal_code'], data['area_code'])
                     reply(res)
                 except urllib2.HTTPError, err:
-                    handle_error(err)
+                    logging.error(err)
+                    reply("Something went wrong :(")
+            elif text.startswith('/rand'):
+                query = text[5:].lower().strip()
+                url = ''
+                if not query:
+                    rtype, length, size = 'uint8', 1, 1
+                else:    
+                    try:
+                        rtype, length, size = map(lambda s: s.strip(), query.split(' '))
+                    except Exception, err:
+                        logging.error(err)
+                        reply("Invalid format :(")
+                url = settings.RAND_URL % (length, rtype, size)
+                req = urllib2.Request(url)
+                try:
+                    f = urllib2.urlopen(req)
+                    response = f.read()
+                    f.close()
+                    data = json.loads(response)
+                    reply(str(data['data'])[1:-1])
+                except urllib2.HTTPError, err:
+                    logging.error(err)
+                    reply("Something went wrong :(")
             else:
                 reply('What command?')
 
@@ -201,15 +225,13 @@ class WebhookHandler(webapp2.RequestHandler):
                         response = data['d']['result']
                         reply(response)
                     except urllib2.HTTPError, err:
-                        handle_error(err)
+                        logging.error(err)
+                        reply("Something went wrong :(")
                 else:
                     reply(settings.COMMANDS_LIST)
             else:
                 logging.info('not enabled for chat_id {}'.format(chat_id))
 
-def handle_error(err):
-    logging.error(err)
-    reply("Something went wrong :(")
 
 app = webapp2.WSGIApplication([
     ('/me', MeHandler),

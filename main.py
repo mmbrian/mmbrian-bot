@@ -173,7 +173,7 @@ class WebhookHandler(webapp2.RequestHandler):
                            data['timezone'],
                            data['country'],
                            data['country_code'],
-                           data['region']
+                           data['region'],
                            data['region_code'],
                            data['isp'],
                            data['postal_code'],

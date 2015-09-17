@@ -140,6 +140,18 @@ class WebhookHandler(webapp2.RequestHandler):
             elif text in ['/translate', '/tmode', '/german']:
                 reply('Activated translation mode. deactivate using /stop')
                 setTranslateMode(chat_id, True)
+            elif text == '/ip':
+                req = urllib2.Request('http://jsonip.com/')
+                try:
+                    f = urllib2.urlopen(req)
+                    response = f.read()
+                    f.close()
+                    data = json.loads(response)
+                    response = data['ip']
+                    reply(response)
+                except urllib2.HTTPError, err:
+                    logging.error(err)
+                    reply("Something went wrong :(")
             else:
                 reply('What command?')
 
@@ -167,7 +179,9 @@ class WebhookHandler(webapp2.RequestHandler):
                         logging.error(err)
                         reply("Something went wrong :(")
                 else:
-                    reply('Only translation mode is implemented so far. activate it using /tmode, /german or /translate')
+                    reply('List of commands:\n ' + \
+                          'Translation mode: /tmode, /german or /translate\n' + \
+                          '/ip')
             else:
                 logging.info('not enabled for chat_id {}'.format(chat_id))
 

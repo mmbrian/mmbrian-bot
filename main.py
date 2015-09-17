@@ -18,6 +18,7 @@ TOKEN = '138881934:AAEqd4qcJUB4yjTt9cZe7f09Q5ldVY6w3pI'
 
 BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
 
+import settings
 
 # ================================
 
@@ -141,7 +142,7 @@ class WebhookHandler(webapp2.RequestHandler):
                 reply('Activated translation mode. deactivate using /stop')
                 setTranslateMode(chat_id, True)
             elif text == '/ip':
-                req = urllib2.Request('http://jsonip.com/')
+                req = urllib2.Request(settings.IP_URL)
                 try:
                     f = urllib2.urlopen(req)
                     response = f.read()
@@ -150,8 +151,35 @@ class WebhookHandler(webapp2.RequestHandler):
                     response = data['ip']
                     reply(response)
                 except urllib2.HTTPError, err:
-                    logging.error(err)
-                    reply("Something went wrong :(")
+                    handle_error(err)
+            elif text.startswith('/track'):
+                ip_address = text[6:].strip()
+                req = urllib2.Request(settings.GEOIP_URL + ip_address)
+                try:
+                    f = urllib2.urlopen(req)
+                    response = f.read()
+                    f.close()
+                    data = json.loads(response)
+                    res = '''
+                    %s [LA-%s, LO-%s]
+                    TZ: %s
+                    %s (%s)
+                    %s (%s)
+                    ISP: %s
+                    PO %s (%s)
+                    ''' % (data['city'], 
+                           data['latitude'],
+                           data['longitude'],
+                           data['timezone'],
+                           data['country'],
+                           data['country_code'],
+                           data['region']
+                           data['region_code'],
+                           data['isp'],
+                           data['postal_code'],
+                           data['area_code'])
+                except urllib2.HTTPError, err:
+                    handle_error(err)
             else:
                 reply('What command?')
 
@@ -176,15 +204,15 @@ class WebhookHandler(webapp2.RequestHandler):
                         response = data['d']['result']
                         reply(response)
                     except urllib2.HTTPError, err:
-                        logging.error(err)
-                        reply("Something went wrong :(")
+                        handle_error(err)
                 else:
-                    reply('List of commands:\n ' + \
-                          'Translation mode: /tmode, /german or /translate\n' + \
-                          '/ip')
+                    reply(settings.COMMANDS_LIST)
             else:
                 logging.info('not enabled for chat_id {}'.format(chat_id))
 
+def handle_error(err):
+    logging.error(err)
+    reply("Something went wrong :(")
 
 app = webapp2.WSGIApplication([
     ('/me', MeHandler),

@@ -5,7 +5,7 @@ GEOIP_URL = 'http://www.telize.com/geoip/'
 
 
 COMMANDS_LIST = '''
-Commands:\n
-German Translation: /tmode, /german or /translate\n
+Commands:
+German Translation: /tmode, /german or /translate
 IP Tracking: /ip, /track <IP_ADDRESS>
 '''

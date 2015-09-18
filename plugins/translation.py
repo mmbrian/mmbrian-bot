@@ -1,5 +1,7 @@
 import urllib2, json, logging
+import unirest
 import settings
+from spellchecking import spellcheck
 
 def translate(query, lang = 'de'):
 	if lang == 'de':
@@ -16,4 +18,36 @@ def translate(query, lang = 'de'):
 		except urllib2.HTTPError, err:
 		    logging.error(err)
 		    return settings.ERROR_MSG
+	return 'I couldn\'t understand.'
+
+def lookup(exp, lang = 'en', spellchecked = False, showAttribution = False):
+	if lang == 'en':
+		try:
+			# quote is similar to javascript's escape method
+			response = unirest.get("https://montanaflynn-dictionary.p.mashape.com/define?word=%s" % urllib2.quote(exp),
+			  headers={
+			    "X-Mashape-Key": "2plRPiDIDamshILOX99O1p9Jc96Rp1ycpuyjsntHxWjaPJf3k8",
+			    "Accept": "application/json"
+			  }
+			)
+		except Exception, err:
+			logging.error(err)
+			return settings.ERROR_MSG
+		if response.code == 200:
+			ret, msg = [], ''
+			for i, definition in enumerate(response.body['definitions']):
+				if showAttribution:
+					ret.append('%s. %s\n(%s)\n' % (i+1, definition['text'], definition['attribution']))
+				else:
+					ret.append('%s. %s\n' % (i+1, definition['text']))
+			if ret:
+				if spellchecked:
+					msg = 'Results for "%s"\n' % exp
+				return msg + ''.join(ret)
+			else:
+				if spellchecked:
+					return 'I couldn\'t find a definition for that.'
+				# Check if expression was misspelled
+				return lookup(spellcheck(exp), spellchecked = True)
+		return settings.ERROR_MSG
 	return 'I couldn\'t understand.'

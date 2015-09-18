@@ -16,10 +16,11 @@ RAND_URL = 'https://qrng.anu.edu.au/API/jsonI.php?length=%s&type=%s&size=%s'
 COMMANDS_LIST = '''
 Functionalities:
 
-German Translation: /german, /ge <GERMAN_TEXT>
+German Translation: /german, /ge <GTEXT>
 SpellCheck: /correct <TEXT>
-IP Tracking: /ip, /track <IP_ADDRESS>
-Random: /rand uint8|uint16|hex16 <LENGTH> <SIZE>
+Lookup: /lookup <EXP>
+IP Tracking: /ip, /track <IP>
+Random: /rand uint8|uint16|hex16 <N> <L>
 '''
 
 ERROR_MSG = "Something went wrong :("

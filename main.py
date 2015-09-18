@@ -22,7 +22,7 @@ TOKEN = '138881934:AAEqd4qcJUB4yjTt9cZe7f09Q5ldVY6w3pI'
 BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
 
 import settings
-from plugins.translation import translate
+from plugins.translation import translate, lookup
 from plugins.spellchecking import spellcheck
 from plugins.iptracking import track, getip
 from plugins.random import rand
@@ -162,6 +162,8 @@ class WebhookHandler(webapp2.RequestHandler):
                 reply(translate(query))
             elif text.startswith('/correct'):
                 reply(spellcheck(text[8:].strip()))
+            elif text.startswith('/lookup'):
+                reply(lookup(text[7:].strip()))
             else:
                 reply('What command?')
 

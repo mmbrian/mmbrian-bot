@@ -21,3 +21,5 @@ SpellCheck: /correct <TEXT>
 IP Tracking: /ip, /track <IP_ADDRESS>
 Random: /rand uint8|uint16|hex16 <LENGTH> <SIZE>
 '''
+
+ERROR_MSG = "Something went wrong :("

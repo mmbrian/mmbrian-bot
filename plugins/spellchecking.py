@@ -1,4 +1,5 @@
-import unirest
+import unirest, logging
+import settings
 
 def spellcheck(query):
 	try:
@@ -9,8 +10,9 @@ def spellcheck(query):
 		  }
 		)
 	except Exception, err:
-		return 'Something went really wrong!'	
+		logging.error(err)
+		return settings.ERROR_MSG
 	if response.code == 200:
 		if 'suggestion' in response.body:
 			return response.body['suggestion']
-	return 'Something went wrong :('
+	return settings.ERROR_MSG

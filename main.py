@@ -24,6 +24,8 @@ BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
 import settings
 from plugins.translation import translate
 from plugins.spellchecking import spellcheck
+from plugins.iptracking import track, getip
+from plugins.random import rand
 
 # ================================
 
@@ -148,66 +150,13 @@ class WebhookHandler(webapp2.RequestHandler):
                 reply('Activated translation mode. deactivate using /stop')
                 setTranslateMode(chat_id, True)
             elif text == '/ip':
-                req = urllib2.Request(settings.IP_URL)
-                try:
-                    f = urllib2.urlopen(req)
-                    response = f.read()
-                    f.close()
-                    data = json.loads(response)
-                    response = data['ip']
-                    reply(response)
-                except urllib2.HTTPError, err:
-                    logging.error(err)
-                    reply("Something went wrong :(")
+                reply(getip())
             elif text.startswith('/track'):
                 ip_address = text[6:].strip()
-                req = urllib2.Request(settings.GEOIP_URL + ip_address)
-                try:
-                    f = urllib2.urlopen(req)
-                    response = f.read()
-                    f.close()
-                    data = json.loads(response)
-                    res = settings.GEOIP_FORMAT % (data['city'], 
-                                                data['latitude'], data['longitude'],
-                                                data['timezone'],
-                                                data['country'], data['country_code'],
-                                                data['region'], data['region_code'],
-                                                data['isp'],
-                                                data['postal_code'], data['area_code'])
-                    reply(res)
-                except urllib2.HTTPError, err:
-                    logging.error(err)
-                    reply("Something went wrong :(")
+                reply(track(ip_address))
             elif text.startswith('/rand'):
                 query = text[5:].lower().strip()
-                url, valid_params = '', False
-                if not query:
-                    rtype, length, size = 'uint8', 1, 1
-                    valid_params = True
-                else:    
-                    try:
-                        params = query.split(' ')
-                        assert len(params) == 3
-                        rtype, length, size = map(lambda s: s.strip(), params)
-                        assert rtype in ['uint8', 'uint16', 'hex16']
-                        length, size = int(length), int(size)
-                        valid_params = True
-                    except Exception, err:
-                        logging.error(err)
-                        reply("Invalid format :(")
-                if valid_params:
-                    url = settings.RAND_URL % (length, rtype, size)
-                    req = urllib2.Request(url)
-                    try:
-                        f = urllib2.urlopen(req)
-                        response = f.read()
-                        f.close()
-                        data = json.loads(response)
-                        assert 'data' in data
-                        reply(str(data['data'])[1:-1])
-                    except Exception, err:
-                        logging.error(err)
-                        reply("Something went wrong :(")
+                reply(rand(query))
             elif text.startswith('/ge'):
                 query = text[3:].strip()
                 reply(translate(query))

@@ -1,6 +1,5 @@
-import urllib2
-import json
-import logging
+import urllib2, json, logging
+import settings
 
 def translate(query, lang = 'de'):
 	if lang == 'de':
@@ -13,10 +12,8 @@ def translate(query, lang = 'de'):
 		    f.close()
 		    data = json.loads(response)
 		    response = data['d']['result']
-		    # reply(response)
 		    return response
 		except urllib2.HTTPError, err:
 		    logging.error(err)
-		    # reply("Something went wrong :(")
-		    return "Something went wrong :("
+		    return settings.ERROR_MSG
 	return 'I couldn\'t understand.'

@@ -1,9 +1,11 @@
+import fix_path
 import StringIO
 import json
 import logging
 import random
 import urllib
 import urllib2
+# import unirest
 
 # for sending images
 from PIL import Image
@@ -19,6 +21,8 @@ TOKEN = '138881934:AAEqd4qcJUB4yjTt9cZe7f09Q5ldVY6w3pI'
 BASE_URL = 'https://api.telegram.org/bot' + TOKEN + '/'
 
 import settings
+from plugins.translation import translate
+from plugins.spellchecking import spellcheck
 
 # ================================
 
@@ -120,6 +124,7 @@ class WebhookHandler(webapp2.RequestHandler):
             logging.info(resp)
 
         if text.startswith('/'):
+            text = text.lower()
             if text == '/start':
                 reply('Bot enabled')
                 setEnabled(chat_id, True)
@@ -138,7 +143,7 @@ class WebhookHandler(webapp2.RequestHandler):
                 output = StringIO.StringIO()
                 img.save(output, 'JPEG')
                 reply(img=output.getvalue())
-            elif text in ['/translate', '/tmode', '/german']:
+            elif text == '/german':
                 reply('Activated translation mode. deactivate using /stop')
                 setTranslateMode(chat_id, True)
             elif text == '/ip':
@@ -161,46 +166,52 @@ class WebhookHandler(webapp2.RequestHandler):
                     response = f.read()
                     f.close()
                     data = json.loads(response)
-                    res = '''
-                    %s | LA %s LO %s
-                    TZ: %s
-                    %s (%s)
-                    %s (%s)
-                    ISP: %s
-                    PO: %s (%s)
-                    ''' % (data['city'], 
-                        data['latitude'], data['longitude'],
-                        data['timezone'],
-                        data['country'], data['country_code'],
-                        data['region'], data['region_code'],
-                        data['isp'],
-                        data['postal_code'], data['area_code'])
+                    res = settings.GEOIP_FORMAT % (data['city'], 
+                                                data['latitude'], data['longitude'],
+                                                data['timezone'],
+                                                data['country'], data['country_code'],
+                                                data['region'], data['region_code'],
+                                                data['isp'],
+                                                data['postal_code'], data['area_code'])
                     reply(res)
                 except urllib2.HTTPError, err:
                     logging.error(err)
                     reply("Something went wrong :(")
             elif text.startswith('/rand'):
                 query = text[5:].lower().strip()
-                url = ''
+                url, valid_params = '', False
                 if not query:
                     rtype, length, size = 'uint8', 1, 1
+                    valid_params = True
                 else:    
                     try:
-                        rtype, length, size = map(lambda s: s.strip(), query.split(' '))
+                        params = query.split(' ')
+                        assert len(params) == 3
+                        rtype, length, size = map(lambda s: s.strip(), params)
+                        assert rtype in ['uint8', 'uint16', 'hex16']
+                        length, size = int(length), int(size)
+                        valid_params = True
                     except Exception, err:
                         logging.error(err)
                         reply("Invalid format :(")
-                url = settings.RAND_URL % (length, rtype, size)
-                req = urllib2.Request(url)
-                try:
-                    f = urllib2.urlopen(req)
-                    response = f.read()
-                    f.close()
-                    data = json.loads(response)
-                    reply(str(data['data'])[1:-1])
-                except urllib2.HTTPError, err:
-                    logging.error(err)
-                    reply("Something went wrong :(")
+                if valid_params:
+                    url = settings.RAND_URL % (length, rtype, size)
+                    req = urllib2.Request(url)
+                    try:
+                        f = urllib2.urlopen(req)
+                        response = f.read()
+                        f.close()
+                        data = json.loads(response)
+                        assert 'data' in data
+                        reply(str(data['data'])[1:-1])
+                    except Exception, err:
+                        logging.error(err)
+                        reply("Something went wrong :(")
+            elif text.startswith('/ge'):
+                query = text[3:].strip()
+                reply(translate(query))
+            elif text.startswith('/correct'):
+                reply(spellcheck(text[8:].strip()))
             else:
                 reply('What command?')
 
@@ -213,20 +224,7 @@ class WebhookHandler(webapp2.RequestHandler):
         else:
             if getEnabled(chat_id):
                 if isTranslateMode(chat_id):
-                    query = text
-                    data = '{\'searchText\': \'' + query + '\', \'direction\': \'65540\', \'maxTranslationChars\':\'-1\'}'
-                    url = 'http://www.reverso.net/WebReferences/WSAJAXInterface.asmx/TranslateWS'
-                    req = urllib2.Request(url, data, {'Content-Type': 'application/json'})
-                    try:
-                        f = urllib2.urlopen(req)
-                        response = f.read()
-                        f.close()
-                        data = json.loads(response)
-                        response = data['d']['result']
-                        reply(response)
-                    except urllib2.HTTPError, err:
-                        logging.error(err)
-                        reply("Something went wrong :(")
+                    reply(translate(text))
                 else:
                     reply(settings.COMMANDS_LIST)
             else:

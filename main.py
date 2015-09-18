@@ -26,6 +26,7 @@ from plugins.translation import translate, lookup
 from plugins.spellchecking import spellcheck
 from plugins.iptracking import track, getip
 from plugins.random import rand
+from plugins.qrcode import getQR
 
 # ================================
 
@@ -104,7 +105,7 @@ class WebhookHandler(webapp2.RequestHandler):
             logging.info('no text')
             return
 
-        def reply(msg=None, img=None):
+        def reply(msg=None, img=None, img_name=None):
             if msg:
                 resp = urllib2.urlopen(BASE_URL + 'sendMessage', urllib.urlencode({
                     'chat_id': str(chat_id),
@@ -117,7 +118,7 @@ class WebhookHandler(webapp2.RequestHandler):
                     ('chat_id', str(chat_id)),
                     ('reply_to_message_id', str(message_id)),
                 ], [
-                    ('photo', 'image.jpg', img),
+                    ('photo', 'image.jpg' if not img_name else img_name, img),
                 ])
             else:
                 logging.error('no msg or img specified')
@@ -164,6 +165,30 @@ class WebhookHandler(webapp2.RequestHandler):
                 reply(spellcheck(text[8:].strip()))
             elif text.startswith('/lookup'):
                 reply(lookup(text[7:].strip()))
+            elif text.startswith('/qrc'):
+                query = text[4:].strip()
+                data = query.split(' ')
+                try:
+                    assert len(data) > 2
+                    ecc = data[0].upper()
+                    assert ecc in ['L', 'M', 'Q', 'H']
+                    size = int(data[1])
+                    query = ' '.join(data[2:])
+                    img = getQR(query, ecc, size)
+                    if img == None:
+                        reply(settings.ERROR_MSG)
+                    else:
+                        reply(img=img, img_name='qr.png')
+                except Exception, err:
+                    logging.error(err)
+                    reply(settings.ERROR_MSG)
+            elif text.startswith('/qr'): # simple qr with default settings
+                query = text[3:].strip()
+                img = getQR(query)
+                if img == None:
+                    reply(settings.ERROR_MSG)
+                else:
+                    reply(img=img, img_name='qr.png')
             else:
                 reply('What command?')
 

@@ -1,8 +1,19 @@
 import urllib2, json, logging
 import settings
 
+IP_URL = 'http://jsonip.com/'
+GEOIP_URL = 'http://www.telize.com/geoip/'
+GEOIP_FORMAT = '''
+%s | LA %s LO %s
+TZ: %s
+%s (%s)
+%s (%s)
+ISP: %s
+PO: %s (%s)'''
+
+
 def track(ip_address):
-	req = urllib2.Request(settings.GEOIP_URL + ip_address)
+	req = urllib2.Request(GEOIP_URL + ip_address)
 	try:
 		f = urllib2.urlopen(req)
 		response = f.read()
@@ -15,7 +26,7 @@ def track(ip_address):
 			if not detail in data:
 				data[detail] = 'NA'
 
-		res = settings.GEOIP_FORMAT % (data['city'], 
+		res = GEOIP_FORMAT % (data['city'], 
 								data['latitude'], data['longitude'],
 								data['timezone'],
 								data['country'], data['country_code'],
@@ -29,7 +40,7 @@ def track(ip_address):
 
 
 def getip():
-	req = urllib2.Request(settings.IP_URL)
+	req = urllib2.Request(IP_URL)
 	try:
 		f = urllib2.urlopen(req)
 		response = f.read()

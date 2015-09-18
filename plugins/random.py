@@ -1,6 +1,13 @@
 import urllib2, logging
 import settings
 
+'''
+This api returns REAL random numbers!
+http://qrng.anu.edu.au/API/api-demo.php
+'''
+
+RAND_URL = 'https://qrng.anu.edu.au/API/jsonI.php?length=%s&type=%s&size=%s'
+
 def rand(query):
 	url, valid_params = '', False
 	if not query:
@@ -18,7 +25,7 @@ def rand(query):
 			logging.error(err)
 			return "Invalid format."
 	if valid_params:
-		url = settings.RAND_URL % (length, rtype, size)
+		url = RAND_URL % (length, rtype, size)
 		req = urllib2.Request(url)
 		try:
 			f = urllib2.urlopen(req)

@@ -27,6 +27,7 @@ from plugins.spellchecking import spellcheck
 from plugins.iptracking import track, getip
 from plugins.random import rand
 from plugins.qrcode import getQR
+from plugins.alan import *
 
 # ================================
 
@@ -34,7 +35,7 @@ class EnableStatus(ndb.Model):
     # key name: str(chat_id)
     enabled = ndb.BooleanProperty(indexed=False, default=False)
     translate_mode = ndb.BooleanProperty(indexed=False, default=False)
-
+    alan_cookie = ndb.StringProperty()
 
 # ================================
 
@@ -58,6 +59,16 @@ def isTranslateMode(chat_id):
     if es:
         return es.translate_mode
     return False    
+
+def setAlanCookie(chat_id, cookie):
+    es = EnableStatus.get_or_insert(str(chat_id))
+    es.alan_cookie = cookie
+    es.put()
+def getAlanCookie(chat_id):
+    es = EnableStatus.get_by_id(str(chat_id))
+    if es:
+        return es.alan_cookie
+    return ''    
     
 
 
@@ -129,13 +140,18 @@ class WebhookHandler(webapp2.RequestHandler):
 
         if text.startswith('/'):
             text = text.lower()
-            if text == '/start':
+            if text in ['/help', '/?', '/cmd']:
+                reply(settings.COMMANDS_LIST)
+            elif text == '/start':
                 reply('Bot enabled')
                 setEnabled(chat_id, True)
             elif text == '/stop':
                 if isTranslateMode(chat_id):
                     reply('Deactivated translation mode.')
                     setTranslateMode(chat_id, False)
+                elif getAlanCookie(chat_id) != '': # Alan is active
+                    reply('Back to normal mode.')
+                    setAlanCookie(chat_id, '')
                 else:
                     reply('Bot disabled')
                     setEnabled(chat_id, False)
@@ -150,6 +166,10 @@ class WebhookHandler(webapp2.RequestHandler):
             elif text == '/german':
                 reply('Activated translation mode. deactivate using /stop')
                 setTranslateMode(chat_id, True)
+            elif text == '/alan':
+                req = sendAlanRequest()
+                setAlanCookie(chat_id, str(getAlanSessionCookieHeader(req)))
+                reply(readAlanResponse(req))
             elif text == '/ip':
                 reply(getip())
             elif text.startswith('/track'):
@@ -200,10 +220,11 @@ class WebhookHandler(webapp2.RequestHandler):
             reply('I\'m not a watch you know, at least not yet.')
         else:
             if getEnabled(chat_id):
+                alan_cookie = getAlanCookie(chat_id)
                 if isTranslateMode(chat_id):
                     reply(translate(text))
-                else:
-                    reply(settings.COMMANDS_LIST)
+                elif alan_cookie != '': # Alan mode is active
+                    reply(readAlanResponse(sendAlanRequest(text, eval(getAlanCookie(chat_id)))))
             else:
                 logging.info('not enabled for chat_id {}'.format(chat_id))
 

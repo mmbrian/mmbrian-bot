@@ -28,6 +28,7 @@ from plugins.iptracking import track, getip
 from plugins.random import rand
 from plugins.qrcode import getQR
 from plugins.alan import *
+from plugins.youtube import *
 
 # ================================
 
@@ -139,13 +140,13 @@ class WebhookHandler(webapp2.RequestHandler):
             logging.info(resp)
 
         if text.startswith('/'):
-            text = text.lower()
-            if text in ['/help', '/?', '/cmd']:
+            cmd = text.lower()
+            if cmd in ['/help', '/?', '/cmd']:
                 reply(settings.COMMANDS_LIST)
-            elif text == '/start':
+            elif cmd == '/start':
                 reply('Bot enabled')
                 setEnabled(chat_id, True)
-            elif text == '/stop':
+            elif cmd == '/stop':
                 if isTranslateMode(chat_id):
                     reply('Deactivated translation mode.')
                     setTranslateMode(chat_id, False)
@@ -155,7 +156,7 @@ class WebhookHandler(webapp2.RequestHandler):
                 else:
                     reply('Bot disabled')
                     setEnabled(chat_id, False)
-            elif text == '/image':
+            elif cmd == '/image':
                 img = Image.new('RGB', (512, 512))
                 base = random.randint(0, 16777216)
                 pixels = [base+i*j for i in range(512) for j in range(512)]  # generate sample image
@@ -163,29 +164,29 @@ class WebhookHandler(webapp2.RequestHandler):
                 output = StringIO.StringIO()
                 img.save(output, 'JPEG')
                 reply(img=output.getvalue())
-            elif text == '/german':
+            elif cmd == '/german':
                 reply('Activated translation mode. deactivate using /stop')
                 setTranslateMode(chat_id, True)
-            elif text == '/alan':
+            elif cmd == '/alan':
                 req = sendAlanRequest()
                 setAlanCookie(chat_id, str(getAlanSessionCookieHeader(req)))
                 reply(readAlanResponse(req))
-            elif text == '/ip':
+            elif cmd == '/ip':
                 reply(getip())
-            elif text.startswith('/track'):
+            elif cmd.startswith('/track'):
                 ip_address = text[6:].strip()
                 reply(track(ip_address))
-            elif text.startswith('/rand'):
+            elif cmd.startswith('/rand'):
                 query = text[5:].lower().strip()
                 reply(rand(query))
-            elif text.startswith('/ge'):
+            elif cmd.startswith('/ge'):
                 query = text[3:].strip()
                 reply(translate(query))
-            elif text.startswith('/correct'):
+            elif cmd.startswith('/correct'):
                 reply(spellcheck(text[8:].strip()))
-            elif text.startswith('/lookup'):
+            elif cmd.startswith('/lookup'):
                 reply(lookup(text[7:].strip()))
-            elif text.startswith('/qrc'):
+            elif cmd.startswith('/qrc'):
                 query = text[4:].strip()
                 data = query.split(' ')
                 try:
@@ -202,13 +203,30 @@ class WebhookHandler(webapp2.RequestHandler):
                 except Exception, err:
                     logging.error(err)
                     reply(settings.ERROR_MSG)
-            elif text.startswith('/qr'): # simple qr with default settings
+            elif cmd.startswith('/qr'): # simple qr with default settings
                 query = text[3:].strip()
                 img = getQR(query)
                 if img == None:
                     reply(settings.ERROR_MSG)
                 else:
                     reply(img=img, img_name='qr.png')
+            elif cmd.startswith('/youtube'):
+                query = text[8:].strip()
+                reply(search(query))
+            elif cmd.startswith('/ydl'):
+                vid = text[4:].strip()
+                reply(getDownloadLinks(vid))
+            elif cmd.startswith('/ynext'):
+                data = text[6:].strip().split(' ')
+                if len(data) > 1:
+                    pgToken = data[0]
+                    query = ' '.join(data[1:])
+                    reply(search(query, pageToken=pgToken))
+                else:
+                    reply(settings.ERROR_MSG)
+            elif cmd.startswith('/ylink'):
+                vid = text[6:].strip()
+                reply(getYouTubeLink(vid))
             else:
                 reply('What command?')
 

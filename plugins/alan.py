@@ -6,16 +6,16 @@ ALAN_URL = 'http://www.a-i.com/alan1/webface1_ctrl.asp?style=Alan&name=Alan'
 def q(question):
 	return ALAN_URL+ '&question=%s' % quote(question)
 
-def sendAlanRequest(question = None, headers = None):
+def sendAlanRequest(question = None, cookie = None):
 	if not question:
 		url = ALAN_URL
 		return urlopen(Request(url))
 	else:
 		url = q(question)
-		return urlopen(Request(url, headers = headers))
+		return urlopen(Request(url, headers = {'Cookie': cookie}))
 
 def getAlanSessionCookieHeader(req):
-	return {'Cookie': req.headers.dict['set-cookie']}
+	return req.headers.dict['set-cookie']
 
 def readAlanResponse(req):
 	prefix = '<option>answer ='

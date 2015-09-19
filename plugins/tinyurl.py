@@ -5,6 +5,8 @@ import urllib2
 import settings
 from bs4 import BeautifulSoup as BS
 
+from google.appengine.api import urlfetch
+
 def getTinyUrl(link, cookie):
 	url = 'https://tinyurl.com/create.php?source=indexpage&url=' + qp(link) + '&submit=Make+TinyURL%21&alias='
 	header = settings.FAKE_HEADER.copy()
@@ -12,14 +14,20 @@ def getTinyUrl(link, cookie):
 	header['Cookie'] = cookie
 	header['Referer'] = 'https://tinyurl.com/'
 	try:
-		response = unirest.get(url,
-		  headers=header
+		# response = unirest.get(url,
+		#   headers=header
+		# )
+		urlfetch.set_default_fetch_deadline(30)
+		response = urlfetch.fetch(url=url, 
+			headers=header
 		)
 	except Exception, err:
 		logging.error(err)
 		return 'NA'
-	if response.code == 200:
-		data = response.body
+	# if response.code == 200:
+	if response.status_code == 200:
+		# data = response.body
+		data = response.content
 		soup = BS(data)
 		for link in soup.find_all('a'):
 			if 'new window' in link.text:

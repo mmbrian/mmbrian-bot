@@ -138,114 +138,117 @@ class WebhookHandler(webapp2.RequestHandler):
 
             logging.info('send response:')
             logging.info(resp)
-
-        if text.startswith('/'):
-            cmd = text.lower()
-            if cmd in ['/help', '/?', '/cmd']:
-                reply(settings.COMMANDS_LIST)
-            elif cmd == '/start':
-                reply('Bot enabled')
-                setEnabled(chat_id, True)
-            elif cmd == '/stop':
-                if isTranslateMode(chat_id):
-                    reply('Deactivated translation mode.')
-                    setTranslateMode(chat_id, False)
-                elif getAlanCookie(chat_id) != '': # Alan is active
-                    reply('Back to normal mode.')
-                    setAlanCookie(chat_id, '')
-                else:
-                    reply('Bot disabled')
-                    setEnabled(chat_id, False)
-            elif cmd == '/image':
-                img = Image.new('RGB', (512, 512))
-                base = random.randint(0, 16777216)
-                pixels = [base+i*j for i in range(512) for j in range(512)]  # generate sample image
-                img.putdata(pixels)
-                output = StringIO.StringIO()
-                img.save(output, 'JPEG')
-                reply(img=output.getvalue())
-            elif cmd == '/german':
-                reply('Activated translation mode. deactivate using /stop')
-                setTranslateMode(chat_id, True)
-            elif cmd == '/alan':
-                req = sendAlanRequest()
-                setAlanCookie(chat_id, str(getAlanSessionCookieHeader(req)))
-                reply(readAlanResponse(req))
-            elif cmd == '/ip':
-                reply(getip())
-            elif cmd.startswith('/track'):
-                ip_address = text[6:].strip()
-                reply(track(ip_address))
-            elif cmd.startswith('/rand'):
-                query = text[5:].lower().strip()
-                reply(rand(query))
-            elif cmd.startswith('/ge'):
-                query = text[3:].strip()
-                reply(translate(query))
-            elif cmd.startswith('/correct'):
-                reply(spellcheck(text[8:].strip()))
-            elif cmd.startswith('/lookup'):
-                reply(lookup(text[7:].strip()))
-            elif cmd.startswith('/qrc'):
-                query = text[4:].strip()
-                data = query.split(' ')
-                try:
-                    assert len(data) > 2
-                    ecc = data[0].upper()
-                    assert ecc in ['L', 'M', 'Q', 'H']
-                    size = int(data[1])
-                    query = ' '.join(data[2:])
-                    img = getQR(query, ecc, size)
+        try:
+            if text.startswith('/'):
+                cmd = text.lower()
+                if cmd in ['/help', '/?', '/cmd']:
+                    reply(settings.COMMANDS_LIST)
+                elif cmd == '/start':
+                    reply('Bot enabled')
+                    setEnabled(chat_id, True)
+                elif cmd == '/stop':
+                    if isTranslateMode(chat_id):
+                        reply('Deactivated translation mode.')
+                        setTranslateMode(chat_id, False)
+                    elif getAlanCookie(chat_id) != '': # Alan is active
+                        reply('Back to normal mode.')
+                        setAlanCookie(chat_id, '')
+                    else:
+                        reply('Bot disabled')
+                        setEnabled(chat_id, False)
+                elif cmd == '/image':
+                    img = Image.new('RGB', (512, 512))
+                    base = random.randint(0, 16777216)
+                    pixels = [base+i*j for i in range(512) for j in range(512)]  # generate sample image
+                    img.putdata(pixels)
+                    output = StringIO.StringIO()
+                    img.save(output, 'JPEG')
+                    reply(img=output.getvalue())
+                elif cmd == '/german':
+                    reply('Activated translation mode. deactivate using /stop')
+                    setTranslateMode(chat_id, True)
+                elif cmd == '/alan':
+                    req = sendAlanRequest()
+                    setAlanCookie(chat_id, str(getAlanSessionCookieHeader(req)))
+                    reply(readAlanResponse(req))
+                elif cmd == '/ip':
+                    reply(getip())
+                elif cmd.startswith('/track'):
+                    ip_address = text[6:].strip()
+                    reply(track(ip_address))
+                elif cmd.startswith('/rand'):
+                    query = text[5:].lower().strip()
+                    reply(rand(query))
+                elif cmd.startswith('/ge'):
+                    query = text[3:].strip()
+                    reply(translate(query))
+                elif cmd.startswith('/correct'):
+                    reply(spellcheck(text[8:].strip()))
+                elif cmd.startswith('/lookup'):
+                    reply(lookup(text[7:].strip()))
+                elif cmd.startswith('/qrc'):
+                    query = text[4:].strip()
+                    data = query.split(' ')
+                    try:
+                        assert len(data) > 2
+                        ecc = data[0].upper()
+                        assert ecc in ['L', 'M', 'Q', 'H']
+                        size = int(data[1])
+                        query = ' '.join(data[2:])
+                        img = getQR(query, ecc, size)
+                        if img == None:
+                            reply(settings.ERROR_MSG)
+                        else:
+                            reply(img=img, img_name='qr.png')
+                    except Exception, err:
+                        logging.error(err)
+                        reply(settings.ERROR_MSG)
+                elif cmd.startswith('/qr'): # simple qr with default settings
+                    query = text[3:].strip()
+                    img = getQR(query)
                     if img == None:
                         reply(settings.ERROR_MSG)
                     else:
                         reply(img=img, img_name='qr.png')
-                except Exception, err:
-                    logging.error(err)
-                    reply(settings.ERROR_MSG)
-            elif cmd.startswith('/qr'): # simple qr with default settings
-                query = text[3:].strip()
-                img = getQR(query)
-                if img == None:
-                    reply(settings.ERROR_MSG)
+                elif cmd.startswith('/youtube'):
+                    query = text[8:].strip()
+                    reply(search(query))
+                elif cmd.startswith('/ydl'):
+                    vid = text[4:].strip()
+                    reply('This could take a while. please don\'t ask anything else before I get you those links.')
+                    reply(getDownloadLinks(vid))
+                elif cmd.startswith('/ynext'):
+                    data = text[6:].strip().split(' ')
+                    if len(data) > 1:
+                        pgToken = data[0]
+                        query = ' '.join(data[1:])
+                        reply(search(query, pageToken=pgToken))
+                    else:
+                        reply(settings.ERROR_MSG)
+                elif cmd.startswith('/ylink'):
+                    vid = text[6:].strip()
+                    reply(getYouTubeLink(vid))
                 else:
-                    reply(img=img, img_name='qr.png')
-            elif cmd.startswith('/youtube'):
-                query = text[8:].strip()
-                reply(search(query))
-            elif cmd.startswith('/ydl'):
-                vid = text[4:].strip()
-                reply(getDownloadLinks(vid))
-            elif cmd.startswith('/ynext'):
-                data = text[6:].strip().split(' ')
-                if len(data) > 1:
-                    pgToken = data[0]
-                    query = ' '.join(data[1:])
-                    reply(search(query, pageToken=pgToken))
+                    reply('What command?')
+
+            # CUSTOMIZE FROM HERE
+
+            elif 'who are you' in text:
+                reply('I\'m just a bot.')
+            elif 'what time' in text:
+                reply('I\'m not a watch you know, at least not yet.')
+            else:
+                if getEnabled(chat_id):
+                    alan_cookie = getAlanCookie(chat_id)
+                    if isTranslateMode(chat_id):
+                        reply(translate(text))
+                    elif alan_cookie != '': # Alan mode is active
+                        reply(readAlanResponse(sendAlanRequest(text, getAlanCookie(chat_id))))
                 else:
-                    reply(settings.ERROR_MSG)
-            elif cmd.startswith('/ylink'):
-                vid = text[6:].strip()
-                reply(getYouTubeLink(vid))
-            else:
-                reply('What command?')
-
-        # CUSTOMIZE FROM HERE
-
-        elif 'who are you' in text:
-            reply('I\'m just a bot.')
-        elif 'what time' in text:
-            reply('I\'m not a watch you know, at least not yet.')
-        else:
-            if getEnabled(chat_id):
-                alan_cookie = getAlanCookie(chat_id)
-                if isTranslateMode(chat_id):
-                    reply(translate(text))
-                elif alan_cookie != '': # Alan mode is active
-                    reply(readAlanResponse(sendAlanRequest(text, eval(getAlanCookie(chat_id)))))
-            else:
-                logging.info('not enabled for chat_id {}'.format(chat_id))
-
+                    logging.info('not enabled for chat_id {}'.format(chat_id))
+        except Exception, err:
+            logging.error(err)
+            reply('Either I couldn\'t understand that or something very bad happened.')
 
 app = webapp2.WSGIApplication([
     ('/me', MeHandler),

@@ -165,9 +165,13 @@ class WebhookHandler(webapp2.RequestHandler):
                     img.save(output, 'JPEG')
                     reply(img=output.getvalue())
                 elif cmd == '/german':
+                    if not getEnabled(chat_id):
+                        setEnabled(chat_id, True)
                     reply('Activated translation mode. deactivate using /stop')
                     setTranslateMode(chat_id, True)
                 elif cmd == '/alan':
+                    if not getEnabled(chat_id):
+                        setEnabled(chat_id, True)
                     req = sendAlanRequest()
                     setAlanCookie(chat_id, str(getAlanSessionCookieHeader(req)))
                     reply(readAlanResponse(req))

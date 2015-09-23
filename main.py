@@ -25,10 +25,11 @@ import settings
 from plugins.translation import translate, lookup
 from plugins.spellchecking import spellcheck
 from plugins.iptracking import track, getip
-from plugins.random import rand
+from plugins.rrandom import rand
 from plugins.qrcode import getQR
 from plugins.alan import *
 from plugins.youtube import *
+from plugins.quote import getRandomQuote
 
 # ================================
 
@@ -235,6 +236,18 @@ class WebhookHandler(webapp2.RequestHandler):
                 elif cmd.startswith('/ylink'):
                     vid = text[6:].strip()
                     reply(getYouTubeLink(vid))
+                elif cmd.startswith('/quote'):
+                    category = text[6:].strip()
+                    if len(category):
+                        reply(getRandomQuote(category=category))
+                    else:
+                        reply(getRandomQuote(randomCategory=True))
+                elif cmd.startswith('/q'):
+                    category = text[2:].strip()
+                    if len(category):
+                        reply(getRandomQuote(category=category))
+                    else:
+                        reply(getRandomQuote(randomCategory=True))
                 else:
                     reply('What command?')
 

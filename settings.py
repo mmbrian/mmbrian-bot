@@ -21,6 +21,9 @@ IP Tracking
 /youtube <TXT>, /ydl <VID>
 /ynext <PGTOKEN> <TXT>
 /ylink <VID>
+[Quote]
+/quote, /q
+/quote or /q famous|movies
 [Help]
 /help, /?, /cmd
 '''

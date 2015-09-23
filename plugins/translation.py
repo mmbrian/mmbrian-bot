@@ -3,9 +3,13 @@ import unirest
 import settings
 from spellchecking import spellcheck
 
-def translate(query, lang = 'de'):
+def translate(query, lang = 'de', direction='ge'):
 	if lang == 'de':
-		data = '{\'searchText\': \'' + query + '\', \'direction\': \'65540\', \'maxTranslationChars\':\'-1\'}'
+		if direction == 'ge': # German to Engligh
+			tdir = '65540'
+		elif direction == 'eg': # English to German
+			tdir = '262145'
+		data = '{\'searchText\': \'' + query + '\', \'direction\': \'' + tdir + '\', \'maxTranslationChars\':\'-1\'}'
 		url = 'http://www.reverso.net/WebReferences/WSAJAXInterface.asmx/TranslateWS'
 		req = urllib2.Request(url, data, {'Content-Type': 'application/json'})
 		try:

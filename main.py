@@ -186,6 +186,9 @@ class WebhookHandler(webapp2.RequestHandler):
                 elif cmd.startswith('/ge'):
                     query = text[3:].strip()
                     reply(translate(query))
+                elif cmd.startswith('/eg'):
+                    query = text[3:].strip()
+                    reply(translate(query, direction='eg'))
                 elif cmd.startswith('/correct'):
                     reply(spellcheck(text[8:].strip()))
                 elif cmd.startswith('/lookup'):

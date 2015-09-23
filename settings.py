@@ -2,8 +2,9 @@
 COMMANDS_LIST = '''
 [Enable/Disable]
 /start, /stop
-[German Translation]
-/german, /ge <GTXT>
+[German/English Translation]
+/german,
+/ge <GTXT>, /eg <ETXT>
 SpellCheck EN
 /correct <TXT>
 Lookup EN
